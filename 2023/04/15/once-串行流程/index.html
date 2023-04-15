@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>
+        Hexo
+    </title>
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <link rel="shortcut icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link rel="stylesheet" href="/css/style/github.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+    <div class="container">
+        <div class="header">
+    <!-- <div class="logo">
+        <a href="/">Hexo</a>
+    </div> -->
+    <div class="logo">
+        <img src="/images/logo.png" alt="Logo">
+    </div>
+    <div class="nav">
+        <ul class="menu">
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                <li class="menu-item">
+                    <a target="_blank" rel="noopener" href="https://github.com/loveminimal" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+                
+        </ul>
+    </div>
+</div>
+        <div class="article">
+    <!-- <div class="article-title">
+        <h2>
+            once 串行流程
+        </h2>
+    </div> -->
+    <div class="article-meta">
+        <div class="article-date">
+            <i class="fas fa-edit"></i>
+            2023/04/15 Sat 20:24&nbsp;&nbsp;&nbsp;
+            <span class="just-a-temp"><span>
+            <i class="fas fa-redo"></i>
+            2023/04/15 Sat 20:24
+        </div>
+    </div>
+    <div class="article-content">
+        <h1 id="节流和防抖存在的问题"><a href="#节流和防抖存在的问题" class="headerlink" title="节流和防抖存在的问题"></a>节流和防抖存在的问题</h1><p>节流（Throttle）和防抖（Debounce）是两种可以节省性能的编程技术，两者的目的都是为了优化性能，提高用户体验。那么两者能否解决所有的场景或者说我们在某些场景下使用两者是否存在问题？举个例子例子，在点击事件进行页面跳转的时候我们一般使用的是防抖。具体分析这个例子是否合理？首先防抖在一个时间段中我们保证了最后一个事件被执行，但是会带来两个问题。一个是如果用户一直在时间段内点击，事件不会被执行；另一个是并不能屏蔽多次触发的问题，在时间段之后点击还是能触发。接下来我们来解决这两个问题，假设一个场景：点击按钮，跳转页面。梳理流程：点击立即执行方法体，方法体未执行完毕点击无效,需要注意的是，执行Taro.navigateTo不是执行完毕，需要success执行才是真正执行完毕。按照流程设计代码如下：</p>
+<p>跳转函数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="title function_">goToPage</span> = (<span class="params">url</span>) =&gt; &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Promise</span>(<span class="function">(<span class="params">resolve, reject</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="title class_">Taro</span>.<span class="title function_">navigateTo</span>(&#123;</span><br><span class="line">      url,</span><br><span class="line">      <span class="attr">success</span>: <span class="function">() =&gt;</span> &#123;</span><br><span class="line">        <span class="title function_">resolve</span>()</span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">fail</span>: <span class="function">() =&gt;</span> &#123;</span><br><span class="line">        <span class="title function_">reject</span>()</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>工具函数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> <span class="title function_">once</span> = (<span class="params">fn</span>) =&gt; &#123;</span><br><span class="line">  <span class="keyword">let</span> isActive = <span class="literal">true</span>;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">async</span> (...args) =&gt; &#123;</span><br><span class="line">    <span class="keyword">if</span> (!isActive) <span class="keyword">return</span>;</span><br><span class="line">    isActive = <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">await</span> fn.<span class="title function_">apply</span>(<span class="variable language_">this</span>, args);</span><br><span class="line">      isActive = <span class="literal">true</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (e) &#123;</span><br><span class="line">      isActive = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>使用：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> onClick = <span class="title function_">once</span>(<span class="title function_">goToPage</span>(<span class="string">&quot;textUrl&quot;</span>))</span><br></pre></td></tr></table></figure>
+
+<p>经过测试频繁点击按钮还是会导致跳多次页面，定位问题为：Taro.navigateTo的success执行并不是页面跳转，中间有个延时，补偿该延时即可：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> sleep (delay = <span class="number">1000</span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Promise</span>(<span class="function"><span class="params">resolve</span> =&gt;</span> <span class="built_in">setTimeout</span>(resolve, delay));</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">const</span> <span class="title function_">goToPage</span> = (<span class="params">url</span>) =&gt; &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Promise</span>(<span class="function">(<span class="params">resolve, reject</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="title function_">navigateTo</span>(&#123;</span><br><span class="line">      url,</span><br><span class="line">      <span class="attr">success</span>: <span class="keyword">async</span> () =&gt; &#123;</span><br><span class="line">        <span class="keyword">await</span> <span class="title function_">sleep</span>(<span class="number">300</span>)</span><br><span class="line">        <span class="title function_">resolve</span>();</span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">fail</span>: <span class="function">() =&gt;</span> &#123;</span><br><span class="line">        <span class="title function_">reject</span>();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>测试完美解决。</p>
+
+    </div>
+
+    <div class="totop">ToTOP</div>
+</div>
+        <div class="footer">
+    <a href="#">
+        2023 <i class="fab fa-studiovinari"></i> 远征 <i class="fas fa-angle-double-up"></i>
+    </a>
+</div>
+
+
+<script src="/js/totop.js"></script>
+
+
+<script src="/js/search.js"></script>
+
+    </div>
+</body>
+
+</html>
